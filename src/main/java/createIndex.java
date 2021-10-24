@@ -27,7 +27,7 @@ public class createIndex {
 
         //path where cranfield dataset lives
         String datafilesPath = "datafiles/cran.all.1400";
-        final Path datafilesDir = Paths.get(datafilesPath);
+     //   final Path datafilesDir = Paths.get(datafilesPath);
 
         // running loop just to generate indexes for 2 analyzers
         for (int i=0; i<2; i++) {
@@ -56,7 +56,7 @@ public class createIndex {
 
                 IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
-                //BM25 Similarity (gave me best map score)
+                //BM25 Similarity gave me best map score
                 iwc.setSimilarity(new BM25Similarity());
 
                 iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
@@ -76,10 +76,11 @@ public class createIndex {
 
     static void createStoreIndex(IndexWriter iwriter, String file) throws IOException
     {
-           // br br = new br(new InputStreamReader(Files.newInputStream(file), StandardCharsets.UTF_8));
             BufferedReader br = new BufferedReader(new FileReader(String.valueOf(file)));
             System.out.println("Indexing documents.....");
             String line = br.readLine();
+
+            // ArrayList of documents
             ArrayList<Document> documents = new ArrayList<Document>();
 
             //looping through whole file, separating data and creating documents
