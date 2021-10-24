@@ -1,7 +1,4 @@
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
@@ -27,7 +24,6 @@ public class createIndex {
 
         //path where cranfield dataset lives
         String datafilesPath = "datafiles/cran.all.1400";
-     //   final Path datafilesDir = Paths.get(datafilesPath);
 
         // running loop just to generate indexes for 2 analyzers
         for (int i=0; i<2; i++) {
@@ -53,16 +49,15 @@ public class createIndex {
                     analyzer = new StandardAnalyzer();
                 }
 
-
                 IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
-                //BM25 Similarity gave me best map score
+                //as BM25 Similarity gave me best map score
                 iwc.setSimilarity(new BM25Similarity());
 
                 iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
                 IndexWriter iwriter = new IndexWriter(dir, iwc);
-                createStoreIndex(iwriter, datafilesPath);
+                createandStoreIndex(iwriter, datafilesPath);
 
                 //commit everything and close
                 iwriter.close();
@@ -74,7 +69,7 @@ public class createIndex {
         }
     }
 
-    static void createStoreIndex(IndexWriter iwriter, String file) throws IOException
+    static void createandStoreIndex(IndexWriter iwriter, String file) throws IOException
     {
             BufferedReader br = new BufferedReader(new FileReader(String.valueOf(file)));
             System.out.println("Indexing documents.....");
@@ -130,15 +125,15 @@ public class createIndex {
                     doc.add(new StringField("bibliography", bib.toString(), Field.Store.YES));
 
                 }
-                //fetching words and running loop as words surely would be more than one line
+                //fetching main content and running loop as main content surely be more than one line
                 if (line.startsWith(".W")){
                     line = br.readLine();
-                    StringBuilder words = new StringBuilder();
+                    StringBuilder mainContent = new StringBuilder();
                     while(line != null && !line.startsWith(".I")){
-                        words.append(line).append(" ");
+                        mainContent.append(line).append(" ");
                         line = br.readLine();
                     }
-                    doc.add(new TextField("words", words.toString(), Field.Store.YES));
+                    doc.add(new TextField("words", mainContent.toString(), Field.Store.YES));
 
                 }
                 //adding document to our linked list
