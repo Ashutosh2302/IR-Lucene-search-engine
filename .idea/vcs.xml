@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/IR-Lucene-search-engine" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/trec_eval" vcs="Git" />
   </component>
 </project>

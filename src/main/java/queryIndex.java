@@ -1,5 +1,4 @@
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,7 +43,6 @@ public class queryIndex {
                 analyzer = new StandardAnalyzer();
             }
 
-
             PrintWriter writer = new PrintWriter(resultPath[i], "UTF-8");
 
             //BM25 Similarity
@@ -55,9 +53,7 @@ public class queryIndex {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(new String[]{"title", "author", "bibliography", "words"}, analyzer);
 
             String line = bufferedReader.readLine();
-
             System.out.println("Reading in queries and creating search results.");
-
             String id = "";
             StringBuilder text = new StringBuilder();
             int j=0;

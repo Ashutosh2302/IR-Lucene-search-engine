@@ -1,11 +1,9 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
@@ -23,12 +21,15 @@ import org.apache.lucene.store.FSDirectory;
 public class createIndex {
 
     public static void main (String[] args) {
+
+        //index_1 => directory to store English Analyzer's indexes, index_2 => directory to store Standard Analyzer's indexes
         String[] indexPaths = {"index_1", "index_2"};
 
-        String docsPath = "datafiles/cran.all.1400";
+        //path where cranfield dataset lives
+        String datafilesPath = "datafiles/cran.all.1400";
+        final Path datafilesDir = Paths.get(datafilesPath);
 
-        final Path docDir = Paths.get(docsPath);
-
+        // running loop just to generate indexes for 2 analyzers
         for (int i=0; i<2; i++) {
             try {
                 if(i==0) {
@@ -38,81 +39,80 @@ public class createIndex {
                     System.out.println("using Standard Analyzer");
                 }
 
-                System.out.println("Indexing to directory '" + indexPaths[i] + "'...");
+                System.out.println("Indexing to directory " + indexPaths[i] + "...");
 
                 Directory dir = FSDirectory.open(Paths.get(indexPaths[i]));
 
                 Analyzer analyzer = null;
                 if(i==0) {
+                    // English Analyzer gave me best map score
                     analyzer= new EnglishAnalyzer();
                 }
                 else {
+                    // Standard Analyzer gave me second best map score
                     analyzer = new StandardAnalyzer();
                 }
 
 
                 IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
-                //BM25 Similarity
+                //BM25 Similarity (gave me best map score)
                 iwc.setSimilarity(new BM25Similarity());
 
                 iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
                 IndexWriter iwriter = new IndexWriter(dir, iwc);
-                createIndex(iwriter, docDir);
+                createStoreIndex(iwriter, datafilesPath);
 
-                //Using writer.forceMerge to maximise search performance.
-                iwriter.forceMerge(1);
-
+                //commit everything and close
                 iwriter.close();
                 System.out.println("Indexing complete!!");
 
             } catch (IOException e) {
-                System.out.println(" caught a " + e.getClass() + "\n with message: " + e.getMessage());
+                System.out.println("Error: " + e.getMessage());
             }
-
         }
     }
 
-    static void createIndex(IndexWriter iwriter, Path file) throws IOException {
-        try (InputStream stream = Files.newInputStream(file)) {
-
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-
+    static void createStoreIndex(IndexWriter iwriter, String file) throws IOException
+    {
+           // br br = new br(new InputStreamReader(Files.newInputStream(file), StandardCharsets.UTF_8));
+            BufferedReader br = new BufferedReader(new FileReader(String.valueOf(file)));
             System.out.println("Indexing documents.....");
+            String line = br.readLine();
+            ArrayList<Document> documents = new ArrayList<Document>();
 
-            String line = bufferedReader.readLine();
-
-
-            //looping through whole file and storing datafiles
+            //looping through whole file, separating data and creating documents
             while(line != null){
+                //create a document
                 Document doc = new Document();
 
                 //fetching ID here, as we are sure that id is only one line therefore no need to run a loop
                 if(line.startsWith(".I")){
-                    doc.add(new StringField("id", line.substring(3), Field.Store.YES));
-                    line = bufferedReader.readLine();
+                    String query_id = line.substring(3);
+                    doc.add(new StringField("id", query_id, Field.Store.YES));
+                    line = br.readLine();
                 }
 
                 //fetching title and running loop as title could be more than one line
                 if (line.startsWith(".T")){
-                    line = bufferedReader.readLine();
+                    line = br.readLine();
                     StringBuilder title = new StringBuilder();
                     while(!line.startsWith(".A")){
                         title.append(line).append(" ");
-                        line = bufferedReader.readLine();
+                        line = br.readLine();
                     }
                     doc.add(new TextField("title", title.toString(), Field.Store.YES));
 
                 }
 
-                //fetching author and running loop as authors might bemore than one line
+                //fetching author and running loop as authors might be more than one line
                 if (line.startsWith(".A")){
                     StringBuilder author = new StringBuilder();
-                    line = bufferedReader.readLine();
+                    line = br.readLine();
                     while(!line.startsWith(".B")){
                         author.append(line).append(" ");
-                        line = bufferedReader.readLine();
+                        line = br.readLine();
                     }
                     doc.add(new TextField("author", author.toString(), Field.Store.YES));
 
@@ -120,29 +120,32 @@ public class createIndex {
 
                 //fetching bibliography and running loop as bibliography might be more than one line
                 if (line.startsWith(".B")){
-                    line = bufferedReader.readLine();
+                    line = br.readLine();
                     StringBuilder bib = new StringBuilder();
                     while(!line.startsWith(".W")){
                         bib.append(line).append(" ");
-                        line = bufferedReader.readLine();
+                        line = br.readLine();
                     }
                     doc.add(new StringField("bibliography", bib.toString(), Field.Store.YES));
 
                 }
                 //fetching words and running loop as words surely would be more than one line
                 if (line.startsWith(".W")){
-                    line = bufferedReader.readLine();
+                    line = br.readLine();
                     StringBuilder words = new StringBuilder();
                     while(line != null && !line.startsWith(".I")){
                         words.append(line).append(" ");
-                        line = bufferedReader.readLine();
+                        line = br.readLine();
                     }
                     doc.add(new TextField("words", words.toString(), Field.Store.YES));
 
                 }
-                iwriter.addDocument(doc);
+                //adding document to our linked list
+                documents.add(doc);
+
             }
-        }
+        // Write all the documents in the linked list to the search index
+        iwriter.addDocuments(documents);
     }
 }
 
